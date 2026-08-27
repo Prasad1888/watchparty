@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import Peer from 'peerjs';
 import './App.css';
 
-const SOCKET_SERVER_URL = 'http://https://watch-party-backend-jh2r.onrender.com/';
+const SOCKET_SERVER_URL = 'https://watch-party-backend-jh2r.onrender.com/';
 
 function App() {
   const [inRoom, setInRoom] = useState(false);
