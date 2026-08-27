@@ -41,9 +41,9 @@ function App() {
     navigator.mediaDevices.getUserMedia({
       video: true,
       audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
       }
     })
       .then((stream) => {
