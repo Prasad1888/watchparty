@@ -53,9 +53,11 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.to(roomId).emit('user-connected', userId);
 
-        // Broadcast the uploaded movie URL to everyone else in the room
+        // --- FIXED: Listen for 'share-movie' from frontend and broadcast 'sync-video-source' ---
         socket.on('share-movie', (data) => {
-            socket.to(roomId).emit('sync-video-source', data.videoUrl);
+            // data can be an object containing videoUrl (or { roomId, videoUrl })
+            const url = data.videoUrl || data;
+            socket.to(roomId).emit('sync-video-source', url);
         });
 
         // Synchronize play, pause, and seek actions across clients

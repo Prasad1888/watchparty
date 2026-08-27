@@ -147,7 +147,6 @@ function App() {
     formData.append('movie', file);
 
     try {
-      // Upload file to your Node.js backend
       const response = await fetch('https://watch-party-backend-jh2r.onrender.com/upload-movie', {
         method: 'POST',
         body: formData,
@@ -156,11 +155,12 @@ function App() {
 
       if (data.videoUrl) {
         setVideoSrc(data.videoUrl);
-        // Broadcast the video URL to everyone else in the room
-        socket.emit('share-movie', { roomId, videoUrl: data.videoUrl });
+
+        // CHANGE THIS LINE to match your socket listener event name:
+        socket.emit('sync-video-source', { roomId, videoUrl: data.videoUrl });
       }
-    } catch (error) {
-      console.error('Error uploading video:', error);
+    } catch (err) {
+      console.error('Error uploading movie:', err);
     }
   };
 
