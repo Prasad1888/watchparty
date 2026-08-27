@@ -28,7 +28,12 @@ app.post('/upload-movie', upload.single('movie'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
     }
-    const videoUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+
+    // Dynamically detect http/https and the correct host (Render vs Localhost)
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const videoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
     res.json({ videoUrl });
 });
 
