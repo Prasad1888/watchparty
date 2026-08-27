@@ -156,8 +156,8 @@ function App() {
       if (data.videoUrl) {
         setVideoSrc(data.videoUrl);
 
-        // CHANGE THIS LINE to match your socket listener event name:
-        socket.emit('sync-video-source', { roomId, videoUrl: data.videoUrl });
+        // Ensure roomId and videoUrl are passed cleanly as an object
+        socket.emit('share-movie', { roomId, videoUrl: data.videoUrl });
       }
     } catch (err) {
       console.error('Error uploading movie:', err);

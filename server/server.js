@@ -55,27 +55,33 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // Join a specific room and handle real-time sync events
+    // Join a specific room
     socket.on('join-room', (roomId, userId, username) => {
         socket.join(roomId);
         socket.to(roomId).emit('user-connected', userId);
+        console.log(`User ${username} joined room: ${roomId}`);
+    });
 
-        // --- FIXED: Listen for 'share-movie' from frontend and broadcast 'sync-video-source' ---
-        socket.on('share-movie', (data) => {
-            // data can be an object containing videoUrl (or { roomId, videoUrl })
-            const url = data.videoUrl || data;
-            socket.to(roomId).emit('sync-video-source', url);
-        });
+    // --- MOVED TO TOP LEVEL ---
+    // Listen for 'share-movie' from frontend and broadcast 'sync-video-source'
+    socket.on('share-movie', (data) => {
+        const targetRoom = data.roomId;
+        const url = data.videoUrl || data;
+        if (targetRoom && url) {
+            socket.to(targetRoom).emit('sync-video-source', url);
+        }
+    });
 
-        // Synchronize play, pause, and seek actions across clients
-        socket.on('media-state-change', (data) => {
-            socket.to(roomId).emit('sync-media', data);
-        });
+    // Synchronize play, pause, and seek actions across clients
+    socket.on('media-state-change', (data) => {
+        if (data.roomId) {
+            socket.to(data.roomId).emit('sync-media', data);
+        }
+    });
+    // ---------------------------
 
-        socket.on('disconnect', () => {
-            socket.to(roomId).emit('user-disconnected', userId);
-            console.log(`User disconnected: ${userId}`);
-        });
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
     });
 });
 
