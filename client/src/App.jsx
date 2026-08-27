@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import Peer from 'peerjs';
 import './App.css';
 
-const SOCKET_SERVER_URL = 'http://localhost:5000';
+const SOCKET_SERVER_URL = 'http://https://watch-party-backend-jh2r.onrender.com/';
 
 function App() {
   const [inRoom, setInRoom] = useState(false);
@@ -148,7 +148,7 @@ function App() {
 
     try {
       // Upload file to your Node.js backend
-      const response = await fetch('http://localhost:5000/upload-movie', {
+      const response = await fetch('https://watch-party-backend-jh2r.onrender.com/upload-movie', {
         method: 'POST',
         body: formData,
       });
