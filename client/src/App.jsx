@@ -109,7 +109,7 @@ function App() {
       socket.disconnect();
       if (peerInstance.current) peerInstance.current.destroy();
     };
-  }, [inRoom, roomId, socket]);
+  }, [inRoom, roomId, username, socket]);
 
   const handlePlay = () => {
     if (isSyncing.current || !socket) return;

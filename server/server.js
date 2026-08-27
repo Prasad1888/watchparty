@@ -9,6 +9,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ensure 'uploads' directory exists on startup so Multer never crashes
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Serve uploaded movie files statically so clients can stream them
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
