@@ -54,7 +54,7 @@ function App() {
           myVideoRef.current.play().catch(e => console.log(e));
         }
 
-        // Answer incoming calls
+        // Answer incoming calls from new peers
         peer.on('call', (call) => {
           call.answer(stream);
           call.on('stream', (remoteStream) => {
@@ -62,7 +62,7 @@ function App() {
           });
         });
 
-        // Call newly connected users
+        // Call users already in the room
         socket.on('user-connected', (userId) => {
           const call = peer.call(userId, stream);
           call.on('stream', (remoteStream) => {
@@ -112,7 +112,7 @@ function App() {
       socket.off('sync-media');
       if (peerInstance.current) peerInstance.current.destroy();
     };
-  }, [inRoom]); // <-- IMPORTANT: Only depend on [inRoom] so it doesn't reset when `isMuted` or `socket` states change!
+  }, [inRoom, roomId, username, socket]);
 
   // --- ADDED: Toggle microphone function to release audio pipeline and fix headphone sound ---
   const toggleMicrophone = () => {
