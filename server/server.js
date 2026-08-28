@@ -30,14 +30,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// API Route to handle movie file uploads from Person A
+// API Route to handle movie file uploads and enforce HTTPS protocol behind proxies
 app.post('/upload-movie', upload.single('movie'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Dynamically detect http/https and the correct host (Render vs Localhost)
-    const protocol = req.protocol;
+    // Force https if behind a proxy like Render to prevent mixed-content issues
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const videoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
@@ -62,7 +62,6 @@ io.on('connection', (socket) => {
         console.log(`User ${username} joined room: ${roomId}`);
     });
 
-    // --- MOVED TO TOP LEVEL ---
     // Listen for 'share-movie' from frontend and broadcast 'sync-video-source'
     socket.on('share-movie', (data) => {
         const targetRoom = data.roomId;
@@ -78,7 +77,6 @@ io.on('connection', (socket) => {
             socket.to(data.roomId).emit('sync-media', data);
         }
     });
-    // ---------------------------
 
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
