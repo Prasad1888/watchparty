@@ -115,12 +115,40 @@ function App() {
   }, [inRoom, roomId, username, socket]);
 
   // --- ADDED: Toggle microphone function to release audio pipeline and fix headphone sound ---
-  const toggleMicrophone = () => {
-    if (activeStream.current) {
-      const audioTrack = activeStream.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
+  const toggleMicrophone = async () => {
+    if (!activeStream.current) return;
+
+    const audioTrack = activeStream.current.getAudioTracks()[0];
+
+    if (audioTrack && audioTrack.enabled) {
+      // Mute: Stop track and remove it so Windows releases communications mode
+      audioTrack.stop();
+      activeStream.current.removeTrack(audioTrack);
+      setIsMuted(true);
+    } else {
+      // Unmute: Request a fresh audio track and append it to the stream
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const newAudioTrack = newStream.getAudioTracks()[0];
+
+        activeStream.current.addTrack(newAudioTrack);
+        setIsMuted(false);
+
+        // If you are currently in a call, replace the track on active PeerJS calls
+        if (peerInstance.current && peers) {
+          Object.values(peerInstance.current.connections).forEach(connectionList => {
+            connectionList.forEach(conn => {
+              if (conn.peerConnection) {
+                const sender = conn.peerConnection.getSenders().find(s => s.track && s.track.kind === 'audio');
+                if (sender) {
+                  sender.replaceTrack(newAudioTrack);
+                }
+              }
+            });
+          });
+        }
+      } catch (err) {
+        console.error('Failed to re-acquire microphone:', err);
       }
     }
   };
