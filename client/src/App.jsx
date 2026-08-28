@@ -12,6 +12,7 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [peers, setPeers] = useState({});
   const [videoSrc, setVideoSrc] = useState(null);
+  const [isMuted, setIsMuted] = useState(false); // --- ADDED: Microphone mute state ---
 
   const myVideoRef = useRef(null);
   const peerInstance = useRef(null);
@@ -77,7 +78,7 @@ function App() {
       });
     });
 
-    // --- NEW: Listen for shared video source from Person A ---
+    // Listen for shared video source from Person A
     socket.on('sync-video-source', (url) => {
       setVideoSrc(url);
     });
@@ -111,6 +112,17 @@ function App() {
     };
   }, [inRoom, roomId, username, socket]);
 
+  // --- ADDED: Toggle microphone function to release audio pipeline and fix headphone sound ---
+  const toggleMicrophone = () => {
+    if (activeStream.current) {
+      const audioTrack = activeStream.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
+  };
+
   const handlePlay = () => {
     if (isSyncing.current || !socket) return;
     socket.emit('media-state-change', {
@@ -138,7 +150,7 @@ function App() {
     });
   };
 
-  // --- NEW: Upload handler function placed inside App component ---
+  // Upload handler function placed inside App component
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -233,6 +245,15 @@ function App() {
             <VideoComponent key={peerId} stream={stream} />
           ))}
         </div>
+
+        {/* --- ADDED: Mute/Unmute Mic Toggle Button UI --- */}
+        <button
+          onClick={toggleMicrophone}
+          className={`p-2.5 rounded font-medium text-sm transition ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-gray-800 hover:bg-gray-700 border border-gray-700'
+            }`}
+        >
+          {isMuted ? 'Unmute Mic 🎤' : 'Mute Mic 🔇'}
+        </button>
       </div>
     </div>
   );
