@@ -54,6 +54,7 @@ function App() {
           myVideoRef.current.play().catch(e => console.log(e));
         }
 
+        // Answer incoming calls
         peer.on('call', (call) => {
           call.answer(stream);
           call.on('stream', (remoteStream) => {
@@ -61,6 +62,7 @@ function App() {
           });
         });
 
+        // Call newly connected users
         socket.on('user-connected', (userId) => {
           const call = peer.call(userId, stream);
           call.on('stream', (remoteStream) => {
@@ -78,12 +80,10 @@ function App() {
       });
     });
 
-    // Listen for shared video source from Person A
     socket.on('sync-video-source', (url) => {
       setVideoSrc(url);
     });
 
-    // Listen for play/pause/seek sync events
     socket.on('sync-media', (data) => {
       if (!moviePlayerRef.current) return;
       isSyncing.current = true;
@@ -107,10 +107,12 @@ function App() {
       if (activeStream.current) {
         activeStream.current.getTracks().forEach((track) => track.stop());
       }
-      socket.disconnect();
+      socket.off('user-disconnected');
+      socket.off('sync-video-source');
+      socket.off('sync-media');
       if (peerInstance.current) peerInstance.current.destroy();
     };
-  }, [inRoom, roomId, username, socket]);
+  }, [inRoom]); // <-- IMPORTANT: Only depend on [inRoom] so it doesn't reset when `isMuted` or `socket` states change!
 
   // --- ADDED: Toggle microphone function to release audio pipeline and fix headphone sound ---
   const toggleMicrophone = () => {
