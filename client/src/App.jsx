@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'peerjs';
-import './App.css';
+// import './App.css';
 
 const SOCKET_SERVER_URL = 'https://watch-party-backend-jh2r.onrender.com/';
 
@@ -12,7 +12,7 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [peers, setPeers] = useState({});
   const [videoSrc, setVideoSrc] = useState(null);
-  const [isMuted, setIsMuted] = useState(false); // --- ADDED: Microphone mute state ---
+  const [isMuted, setIsMuted] = useState(false);
 
   const myVideoRef = useRef(null);
   const peerInstance = useRef(null);
@@ -54,7 +54,6 @@ function App() {
           myVideoRef.current.play().catch(e => console.log(e));
         }
 
-        // Answer incoming calls from new peers
         peer.on('call', (call) => {
           call.answer(stream);
           call.on('stream', (remoteStream) => {
@@ -62,7 +61,6 @@ function App() {
           });
         });
 
-        // Call users already in the room
         socket.on('user-connected', (userId) => {
           const call = peer.call(userId, stream);
           call.on('stream', (remoteStream) => {
@@ -114,19 +112,16 @@ function App() {
     };
   }, [inRoom, roomId, username, socket]);
 
-  // --- ADDED: Toggle microphone function to release audio pipeline and fix headphone sound ---
   const toggleMicrophone = async () => {
     if (!activeStream.current) return;
 
     const audioTrack = activeStream.current.getAudioTracks()[0];
 
     if (audioTrack && audioTrack.enabled) {
-      // Mute: Stop track and remove it so Windows releases communications mode
       audioTrack.stop();
       activeStream.current.removeTrack(audioTrack);
       setIsMuted(true);
     } else {
-      // Unmute: Request a fresh audio track and append it to the stream
       try {
         const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const newAudioTrack = newStream.getAudioTracks()[0];
@@ -134,7 +129,6 @@ function App() {
         activeStream.current.addTrack(newAudioTrack);
         setIsMuted(false);
 
-        // If you are currently in a call, replace the track on active PeerJS calls
         if (peerInstance.current && peers) {
           Object.values(peerInstance.current.connections).forEach(connectionList => {
             connectionList.forEach(conn => {
@@ -180,7 +174,6 @@ function App() {
     });
   };
 
-  // Upload handler function placed inside App component
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -197,8 +190,6 @@ function App() {
 
       if (data.videoUrl) {
         setVideoSrc(data.videoUrl);
-
-        // Ensure roomId and videoUrl are passed cleanly as an object
         socket.emit('share-movie', { roomId, videoUrl: data.videoUrl });
       }
     } catch (err) {
@@ -208,26 +199,31 @@ function App() {
 
   if (!inRoom) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white w-full">
-        <form onSubmit={handleJoinRoom} className="bg-gray-800 p-8 rounded-lg shadow-lg w-96 flex flex-col gap-4 border border-gray-700">
-          <h2 className="text-2xl font-bold text-center mb-2 text-indigo-400">Movie Watch Party</h2>
-          <input
-            type="text"
-            placeholder="Your Name"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-indigo-500"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Room ID (e.g., room-123)"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            className="p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-indigo-500"
-            required
-          />
-          <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 p-3 rounded font-bold transition">
+      <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white w-full p-4">
+        <form onSubmit={handleJoinRoom} className="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md flex flex-col gap-5">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">Movie Watch Party</h2>
+            <p className="text-slate-400 text-sm">Enter your details to join or start a room</p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <input
+              type="text"
+              placeholder="Your Name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Room ID (e.g., room-123)"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              required
+            />
+          </div>
+          <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white p-3.5 rounded-xl font-semibold shadow-lg shadow-indigo-600/25 transition">
             Join Room
           </button>
         </form>
@@ -236,54 +232,81 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden w-full">
-      <div className="flex-1 flex flex-col justify-center items-center p-4 gap-4">
-        <div className="w-full max-w-4xl bg-black aspect-video rounded-lg overflow-hidden relative shadow-2xl flex items-center justify-center border border-gray-800">
-          {videoSrc ? (
-            <video
-              ref={moviePlayerRef}
-              src={videoSrc}
-              controls
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onSeeked={handleSeek}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-gray-400 text-sm">No movie selected yet</span>
-              <label className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded cursor-pointer font-medium text-sm transition">
-                Select Movie File from PC
-                <input type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col min-h-screen bg-slate-950 text-white w-full overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+      {/* Main Content Layout: Desktop (Side-by-Side), Mobile (Stacked) */}
+      <div className="flex-1 flex flex-col lg:flex-row p-4 lg:p-6 gap-6 items-center justify-center max-w-[1600px] mx-auto w-full my-auto">
 
-      <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col p-4 gap-4">
-        <h3 className="font-semibold text-lg border-b border-gray-800 pb-2">Friends in Room ({roomId})</h3>
-        <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-          <div className="bg-gray-800 aspect-video rounded flex items-center justify-center relative border border-gray-700 overflow-hidden">
-            <video ref={myVideoRef} muted autoPlay playsInline className="w-full h-full object-cover" />
-            <span className="absolute bottom-1 left-2 text-xs bg-black/60 px-1.5 py-0.5 rounded text-gray-200">
-              {username} (You)
-            </span>
+        {/* Left Side: Main Video Player */}
+        <div className="flex-1 w-full flex items-center justify-center">
+          <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden relative shadow-2xl flex items-center justify-center border border-slate-800/80">
+            {videoSrc ? (
+              <video
+                ref={moviePlayerRef}
+                src={videoSrc}
+                controls
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeeked={handleSeek}
+                className="w-full h-full object-contain mx-auto"
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-4 p-8 text-center max-w-md">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-1">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span className="text-slate-300 font-medium text-base">No movie selected yet</span>
+                <p className="text-slate-500 text-xs leading-relaxed">Upload a video file from your computer to start watching together seamlessly.</p>
+                <label className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl cursor-pointer font-semibold text-sm transition shadow-lg shadow-indigo-600/25 mt-2">
+                  Select Movie File from PC
+                  <input type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: Vertical Stacked Cameras & Room Info (Desktop) / Horizontal Row (Mobile) */}
+        <div className="w-full lg:w-80 xl:w-96 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 flex flex-col gap-4 shadow-xl shrink-0">
+          {/* Room Header Info */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-slate-400">Room:</span> <span className="text-indigo-400 font-semibold">{roomId}</span>
+            </div>
+            <span className="bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full font-medium">{Object.keys(peers).length + 1} online</span>
           </div>
 
-          {Object.entries(peers).map(([peerId, stream]) => (
-            <VideoComponent key={peerId} stream={stream} />
-          ))}
+          {/* Vertical Camera Feeds Column */}
+          {/* Vertical Camera Feeds Column */}
+          <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto max-h-[450px] pb-1 lg:pb-0 scrollbar-thin w-full">
+            {/* Local User Video */}
+            <div className="bg-slate-950 w-56 sm:w-64 lg:w-full aspect-video rounded-xl flex items-center justify-center relative border border-slate-800 overflow-hidden shadow-md shrink-0 group">
+              <video ref={myVideoRef} muted autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+              <span className="absolute bottom-2 left-2 text-xs bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-md text-slate-200 font-medium tracking-wide">
+                {username} (You)
+              </span>
+            </div>
+
+            {/* Remote Peer Videos */}
+            {Object.entries(peers).map(([peerId, stream]) => (
+              <VideoComponent key={peerId} stream={stream} />
+            ))}
+          </div>
+
+          {/* Mute/Unmute Mic Toggle Button */}
+          <button
+            onClick={toggleMicrophone}
+            className={`w-full py-3 px-4 rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2 shadow-lg mt-auto ${isMuted
+              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/25'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 shadow-slate-900/50'
+              }`}
+          >
+            {isMuted ? <>Unmute Microphone <span className="text-base">🎤</span></> : <>Mute Microphone <span className="text-base">🔇</span></>}
+          </button>
         </div>
 
-        {/* --- ADDED: Mute/Unmute Mic Toggle Button UI --- */}
-        <button
-          onClick={toggleMicrophone}
-          className={`p-2.5 rounded font-medium text-sm transition ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-gray-800 hover:bg-gray-700 border border-gray-700'
-            }`}
-        >
-          {isMuted ? 'Unmute Mic 🎤' : 'Mute Mic 🔇'}
-        </button>
       </div>
     </div>
   );
@@ -299,9 +322,9 @@ function VideoComponent({ stream }) {
   }, [stream]);
 
   return (
-    <div className="bg-gray-800 aspect-video rounded flex items-center justify-center relative border border-gray-700 overflow-hidden">
+    <div className="bg-slate-950 w-56 sm:w-64 lg:w-full aspect-video rounded-xl flex items-center justify-center relative border border-slate-800 overflow-hidden shadow-md shrink-0 group">
       <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-      <span className="absolute bottom-1 left-2 text-xs bg-black/60 px-1.5 py-0.5 rounded text-gray-200">
+      <span className="absolute bottom-2 left-2 text-xs bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-md text-slate-200 font-medium tracking-wide">
         Friend
       </span>
     </div>
