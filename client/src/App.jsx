@@ -1,9 +1,8 @@
+const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL;
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import Peer from 'peerjs';
-// import './App.css';
 
-const SOCKET_SERVER_URL = 'https://watch-party-backend-jh2r.onrender.com/';
 
 function App() {
   const [inRoom, setInRoom] = useState(false);
@@ -182,7 +181,7 @@ function App() {
     formData.append('movie', file);
 
     try {
-      const response = await fetch('https://watch-party-backend-jh2r.onrender.com/upload-movie', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/upload-movie`, {
         method: 'POST',
         body: formData,
       });
